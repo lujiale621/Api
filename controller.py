@@ -1,5 +1,4 @@
-import socket
-import sys
+import gevent
 import threading
 import re
 import json
@@ -8,7 +7,7 @@ import anime.am1 as am1
 import manhua.mh1 as mh1
 import manhua.mh2 as mh2
 import movie.mv1 as mv1
-
+from gevent import socket
 NovelSearchBookTask = "NovelSearchBookTask"
 NovelSearchBookMoreTask = "NovelSearchBookMoreTask"
 NovelSearchBookDetailTask = "NovelSearchBookDetailTask"
@@ -28,6 +27,18 @@ ManhuaSortContentlinkTask = "ManhuaSortContentlinkTask"
 MovieSearchTask="MovieSearchTask"
 MovieDetailTask="MovieDetailTask"
 MoviePlayerTask="MoviePlayerTask"
+
+
+def gorun(clientsocket):
+    try:
+        thread = ServerThreading(clientsocket)
+        thread.start()
+        pass
+    except Exception as identifier:
+        print(identifier)
+        pass
+
+
 def main():
     serversocker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = socket.gethostname()
@@ -39,13 +50,7 @@ def main():
     while True:
         clientsocket, addr = serversocker.accept()
         print("连接地址:%s" % str(addr))
-        try:
-            thread = ServerThreading(clientsocket)
-            thread.start()
-            pass
-        except Exception as identifier:
-            print(identifier)
-            pass
+        gevent.spawn(gorun, clientsocket)
         pass
     serversocker.close()
     pass
@@ -177,7 +182,8 @@ class ServerThreading(threading.Thread):
             ms['list'] = msgs
             presendmsg = json.dumps(ms, ensure_ascii=False)
             print(presendmsg)
-            self._socket.send(presendmsg.encode('utf-8'))
+            send=presendmsg.encode('utf-8')
+            self._socket.send(send)
         except Exception as identifier:
             self._socket.send("500".encode(self._encoding))
             print(identifier)
